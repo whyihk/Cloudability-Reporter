@@ -6,6 +6,7 @@ A Python tool for exporting Cloudability cost reports for AWS and Azure cloud se
 
 - Multi-cloud support (AWS and Azure)
 - Configurable views via JSON configuration
+- Category-based cost classification
 - Chunked data processing for large datasets
 - Excel export with formatted worksheets
 - Comprehensive error handling and logging
@@ -40,21 +41,25 @@ pip install pandas requests xlsxwriter openpyxl
     "AWS": {
         "aws_view1": {
             "dimensions": ["service", "resource", "tags"],
-            "metrics": ["cost"]
+            "metrics": ["cost"],
+            "category": "core"
         },
         "aws_view2": {
             "dimensions": ["service", "resource", "tags", "account", "region"],
-            "metrics": ["cost"]
+            "metrics": ["cost"],
+            "category": "product1"
         }
     },
     "Azure": {
         "azure_view1": {
             "dimensions": ["service", "resource"],
-            "metrics": ["cost"]
+            "metrics": ["cost"],
+            "category": "product2"
         },
         "azure_view2": {
             "dimensions": ["service", "resource", "account", "region"],
-            "metrics": ["cost"]
+            "metrics": ["cost"],
+            "category": "product3"
         }
     }
 }
@@ -62,9 +67,9 @@ pip install pandas requests xlsxwriter openpyxl
 
 ## Usage
 
-1. Update the API key in the script:
-```python
-API_KEY = 'your_cloudability_api_key'
+1. Set your Cloudability API key as an environment variable:
+```bash
+export CLOUDABILITY_API_KEY='your_cloudability_api_key'
 ```
 
 2. Run the script:
@@ -81,6 +86,7 @@ python cloudability_reports.py --start-date 2024-01-01 --end-date 2024-01-31
 
 The script generates an Excel file with:
 - Separate worksheets for AWS and Azure data
+- Category as the first column for cost classification
 - Formatted headers and columns
 - Auto-adjusted column widths
 - Filename format: `cloudability_report_YYYYMMDD.xlsx`
@@ -103,6 +109,8 @@ The test suite covers:
 - Error handling
 - Multiple view configurations
 - Both AWS and Azure providers
+- Category field handling
+- Environment variable configuration
 
 ## Memory Optimization
 
@@ -118,6 +126,7 @@ The tool is optimized for large datasets:
 - Graceful error handling for:
   - API failures
   - Invalid configurations
+  - Missing API key
   - Data processing errors
   - Excel export issues
 
