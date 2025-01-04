@@ -1,0 +1,22 @@
+{
+    "AWS": {
+        "aws_view1": {
+            "dimensions": ["service", "resource", "tags"],
+            "metrics": ["cost"]
+        },
+        "aws_view2": {
+            "dimensions": ["service", "resource", "tags", "account", "region"],
+            "metrics": ["cost"]
+        }
+    },
+    "Azure": {
+        "azure_view1": {
+            "dimensions": ["service", "resource"],
+            "metrics": ["cost"]
+        },
+        "azure_view2": {
+            "dimensions": ["service", "resource", "account", "region"],
+            "metrics": ["cost"]
+        }
+    }
+} 
