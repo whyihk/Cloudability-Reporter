@@ -24,7 +24,8 @@ class TestCloudabilityReporter(unittest.TestCase):
             "AWS": {
                 "aws_view1": {
                     "dimensions": ["service", "resource", "tags"],
-                    "metrics": ["cost"]
+                    "metrics": ["cost"],
+                    "category": "core"
                 },
                 "aws_view2": {
                     "dimensions": [
@@ -34,17 +35,20 @@ class TestCloudabilityReporter(unittest.TestCase):
                         "account",
                         "region"
                     ],
-                    "metrics": ["cost"]
+                    "metrics": ["cost"],
+                    "category": "product1"
                 }
             },
             "Azure": {
                 "azure_view1": {
                     "dimensions": ["service", "resource"],
-                    "metrics": ["cost"]
+                    "metrics": ["cost"],
+                    "category": "product2"
                 },
                 "azure_view2": {
                     "dimensions": ["service", "resource", "account", "region"],
-                    "metrics": ["cost"]
+                    "metrics": ["cost"],
+                    "category": "product3"
                 }
             }
         }
