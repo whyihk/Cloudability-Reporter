@@ -188,6 +188,7 @@ class TestCloudabilityReporter(unittest.TestCase):
         1. Returns a valid DataFrame
         2. DataFrame has correct number of rows
         3. Column names are properly formatted
+        4. Category is the first column
         """
         mock_data = {
             'data': [
@@ -200,7 +201,10 @@ class TestCloudabilityReporter(unittest.TestCase):
 
         self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result), 2)
-        self.assertEqual(set(result.columns), {'service', 'cost'})
+        expected_columns = {'category', 'service', 'cost'}
+        self.assertEqual(set(result.columns), expected_columns)
+        self.assertEqual(result.columns[0], 'category')
+        self.assertEqual(result['category'].iloc[0], 'core')  # Check category value
 
     def test_process_data_empty(self):
         """
@@ -359,6 +363,7 @@ class TestCloudabilityReporter(unittest.TestCase):
         3. DataFrames maintain correct structure
         4. Column names match configuration
         5. Data types are preserved
+        6. Category is the first column with correct value
         """
         mock_aws_data = {
             'data': [
@@ -404,17 +409,21 @@ class TestCloudabilityReporter(unittest.TestCase):
         self.assertIsInstance(aws_result, pd.DataFrame)
         self.assertEqual(len(aws_result), 2)
         expected_aws_columns = {
-            'service', 'resource', 'tags', 'account', 'region', 'cost'
+            'category', 'service', 'resource', 'tags', 'account', 'region', 'cost'
         }
         self.assertEqual(set(aws_result.columns), expected_aws_columns)
+        self.assertEqual(aws_result.columns[0], 'category')
+        self.assertEqual(aws_result['category'].iloc[0], 'product1')
 
         azure_result = self.reporter.process_data(mock_azure_data, 'azure_view2')
         self.assertIsInstance(azure_result, pd.DataFrame)
         self.assertEqual(len(azure_result), 2)
         expected_azure_columns = {
-            'service', 'resource', 'account', 'region', 'cost'
+            'category', 'service', 'resource', 'account', 'region', 'cost'
         }
         self.assertEqual(set(azure_result.columns), expected_azure_columns)
+        self.assertEqual(azure_result.columns[0], 'category')
+        self.assertEqual(azure_result['category'].iloc[0], 'product3')
 
     @patch('pandas.ExcelWriter')
     def test_export_to_excel_both_providers(self, mock_writer):
@@ -616,12 +625,12 @@ class TestCloudabilityReporter(unittest.TestCase):
 
         Test Data:
         AWS:
-        - aws_view1: service, resource, tags
-        - aws_view2: service, resource, tags, account, region
+        - aws_view1: service, resource, tags (category: core)
+        - aws_view2: service, resource, tags, account, region (category: product1)
 
         Azure:
-        - azure_view1: service, resource
-        - azure_view2: service, resource, account, region
+        - azure_view1: service, resource (category: product2)
+        - azure_view2: service, resource, account, region (category: product3)
 
         Verifies:
         1. Each view's data is processed correctly
@@ -629,6 +638,7 @@ class TestCloudabilityReporter(unittest.TestCase):
         3. DataFrames maintain correct structure per view
         4. Column names match view configurations
         5. Data types are preserved
+        6. Category is the first column with correct value for each view
         """
         # AWS View 1 data
         aws_view1_data = {
@@ -677,32 +687,40 @@ class TestCloudabilityReporter(unittest.TestCase):
         self.assertIsInstance(aws_v1_result, pd.DataFrame)
         self.assertEqual(
             set(aws_v1_result.columns),
-            {'service', 'resource', 'tags', 'cost'}
+            {'category', 'service', 'resource', 'tags', 'cost'}
         )
+        self.assertEqual(aws_v1_result.columns[0], 'category')
+        self.assertEqual(aws_v1_result['category'].iloc[0], 'core')
 
         # Test AWS View 2
         aws_v2_result = self.reporter.process_data(aws_view2_data, 'aws_view2')
         self.assertIsInstance(aws_v2_result, pd.DataFrame)
         self.assertEqual(
             set(aws_v2_result.columns),
-            {'service', 'resource', 'tags', 'account', 'region', 'cost'}
+            {'category', 'service', 'resource', 'tags', 'account', 'region', 'cost'}
         )
+        self.assertEqual(aws_v2_result.columns[0], 'category')
+        self.assertEqual(aws_v2_result['category'].iloc[0], 'product1')
 
         # Test Azure View 1
         azure_v1_result = self.reporter.process_data(azure_view1_data, 'azure_view1')
         self.assertIsInstance(azure_v1_result, pd.DataFrame)
         self.assertEqual(
             set(azure_v1_result.columns),
-            {'service', 'resource', 'cost'}
+            {'category', 'service', 'resource', 'cost'}
         )
+        self.assertEqual(azure_v1_result.columns[0], 'category')
+        self.assertEqual(azure_v1_result['category'].iloc[0], 'product2')
 
         # Test Azure View 2
         azure_v2_result = self.reporter.process_data(azure_view2_data, 'azure_view2')
         self.assertIsInstance(azure_v2_result, pd.DataFrame)
         self.assertEqual(
             set(azure_v2_result.columns),
-            {'service', 'resource', 'account', 'region', 'cost'}
+            {'category', 'service', 'resource', 'account', 'region', 'cost'}
         )
+        self.assertEqual(azure_v2_result.columns[0], 'category')
+        self.assertEqual(azure_v2_result['category'].iloc[0], 'product3')
 
 
 if __name__ == '__main__':

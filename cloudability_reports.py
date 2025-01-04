@@ -123,6 +123,13 @@ class CloudabilityReporter:
             df = pd.DataFrame(data['data'])
 
             if not df.empty:
+                # Add category column from views_config
+                for provider in self.views_config:
+                    if view_name in self.views_config[provider]:
+                        category = self.views_config[provider][view_name].get('category', '')
+                        df.insert(0, 'category', category)
+                        break
+
                 # Optimize numeric columns
                 for col in df.select_dtypes(include=['float64']).columns:
                     df[col] = pd.to_numeric(df[col], downcast='float')
