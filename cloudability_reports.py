@@ -5,6 +5,7 @@ import logging
 from typing import Dict, Any, Optional
 import argparse
 import json
+import os
 
 
 class CloudabilityReporter:
@@ -30,7 +31,11 @@ class CloudabilityReporter:
         Raises:
             FileNotFoundError: If views_file doesn't exist
             json.JSONDecodeError: If views_file is not valid JSON
+            ValueError: If API key is not provided
         """
+        if not api_key:
+            raise ValueError("API key is required")
+
         self.api_key = api_key
         self.base_url = 'https://api.cloudability.com/v3'
         self.headers = {
@@ -231,7 +236,12 @@ class CloudabilityReporter:
 
 
 def main():
-    API_KEY = 'your_api_key_here'
+    # Get API key from environment variable
+    api_key = os.getenv('CLOUDABILITY_API_KEY')
+    if not api_key:
+        print("Error: CLOUDABILITY_API_KEY environment variable is not set")
+        return 1
+
     VIEWS_FILE = 'views_config.json'
 
     parser = argparse.ArgumentParser(description='Export Cloudability reports to Excel')
@@ -240,31 +250,44 @@ def main():
 
     args = parser.parse_args()
 
-    reporter = CloudabilityReporter(API_KEY, VIEWS_FILE)
-    cloud_data = {}
+    try:
+        reporter = CloudabilityReporter(api_key, VIEWS_FILE)
+        cloud_data = {}
 
-    # Process each cloud provider and its views
-    for provider in ['AWS', 'Azure']:
-        dfs = []
-        for view_name in reporter.views_config[provider].keys():
-            data = reporter.get_report(
-                provider,
-                view_name,
-                args.start_date,
-                args.end_date
-            )
-            if data:
-                df = reporter.process_data(data, view_name)
-                if df is not None:
-                    dfs.append(df)
+        # Process each cloud provider and its views
+        for provider in ['AWS', 'Azure']:
+            dfs = []
+            for view_name in reporter.views_config[provider].keys():
+                data = reporter.get_report(
+                    provider,
+                    view_name,
+                    args.start_date,
+                    args.end_date
+                )
+                if data:
+                    df = reporter.process_data(data, view_name)
+                    if df is not None:
+                        dfs.append(df)
 
-        if dfs:
-            cloud_data[provider] = pd.concat(dfs, ignore_index=True)
+            if dfs:
+                cloud_data[provider] = pd.concat(dfs, ignore_index=True)
 
-    if cloud_data:
-        filename = f'cloudability_report_{datetime.now().strftime("%Y%m%d")}.xlsx'
-        reporter.export_to_excel(cloud_data, filename)
+        if cloud_data:
+            filename = f'cloudability_report_{datetime.now().strftime("%Y%m%d")}.xlsx'
+            if reporter.export_to_excel(cloud_data, filename):
+                print(f"Report exported successfully to {filename}")
+                return 0
+            else:
+                print("Error: Failed to export report")
+                return 1
+        else:
+            print("Error: No data retrieved from Cloudability API")
+            return 1
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return 1
 
 
 if __name__ == '__main__':
-    main() 
+    exit(main()) 

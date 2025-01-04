@@ -726,6 +726,85 @@ class TestCloudabilityReporter(unittest.TestCase):
         self.assertEqual(azure_v2_result.columns[0], 'category')
         self.assertEqual(azure_v2_result['category'].iloc[0], 'product3')
 
+    def test_init_missing_api_key(self):
+        """
+        Test initialization with missing API key.
+
+        Verifies:
+        1. Raises ValueError when API key is empty
+        2. Raises ValueError when API key is None
+        """
+        with self.assertRaises(ValueError) as context:
+            with patch(
+                'builtins.open',
+                mock_open(read_data=json.dumps(self.mock_views_config))
+            ):
+                CloudabilityReporter('', 'mock_views.json')
+        self.assertEqual(str(context.exception), "API key is required")
+
+        with self.assertRaises(ValueError) as context:
+            with patch(
+                'builtins.open',
+                mock_open(read_data=json.dumps(self.mock_views_config))
+            ):
+                CloudabilityReporter(None, 'mock_views.json')
+        self.assertEqual(str(context.exception), "API key is required")
+
+    @patch.dict('os.environ', {'CLOUDABILITY_API_KEY': 'test_env_api_key'})
+    def test_main_with_env_api_key(self):
+        """
+        Test main function with API key from environment variable.
+
+        Verifies:
+        1. API key is correctly read from environment variable
+        2. Reporter is initialized with the environment API key
+        3. Program exits successfully
+        """
+        with patch(
+            'builtins.open',
+            mock_open(read_data=json.dumps(self.mock_views_config))
+        ), patch(
+            'cloudability_reports.CloudabilityReporter'
+        ) as mock_reporter, patch(
+            'argparse.ArgumentParser.parse_args'
+        ) as mock_args:
+            # Mock command line arguments
+            mock_args.return_value.start_date = '2024-01-01'
+            mock_args.return_value.end_date = '2024-01-31'
+
+            # Mock reporter instance
+            mock_reporter_instance = MagicMock()
+            mock_reporter_instance.views_config = self.mock_views_config
+            mock_reporter_instance.get_report.return_value = {'data': []}
+            mock_reporter_instance.process_data.return_value = pd.DataFrame()
+            mock_reporter_instance.export_to_excel.return_value = True
+            mock_reporter.return_value = mock_reporter_instance
+
+            # Run main function
+            from cloudability_reports import main
+            exit_code = main()
+
+            # Verify reporter was initialized with environment API key
+            mock_reporter.assert_called_once_with('test_env_api_key', 'views_config.json')
+            self.assertEqual(exit_code, 0)
+
+    def test_main_without_env_api_key(self):
+        """
+        Test main function without API key in environment.
+
+        Verifies:
+        1. Program exits with error when API key is not set
+        2. Error message is displayed
+        """
+        with patch.dict('os.environ', clear=True), patch('builtins.print') as mock_print:
+            from cloudability_reports import main
+            exit_code = main()
+
+            mock_print.assert_called_with(
+                "Error: CLOUDABILITY_API_KEY environment variable is not set"
+            )
+            self.assertEqual(exit_code, 1)
+
 
 if __name__ == '__main__':
     unittest.main() 
